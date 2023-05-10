@@ -1,0 +1,11 @@
+[Unit]
+Description=Light decentralized VPN in Rust
+After=syslog.target network.target
+
+[Service]
+ExecStart=/path/to/your/rust/binary
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+

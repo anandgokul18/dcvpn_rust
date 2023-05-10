@@ -1,49 +1,104 @@
-use std::net::SocketAddr;
-use std::sync::Arc;
-use tokio::net::UdpSocket;
-use tokio_tun::result::Result;
-use tokio_tun::Tun;
-use clap::{App, Arg};
+use std::error::Error;
+use std::net::{UdpSocket};
+use std::sync::{mpsc, Arc, Mutex};
+use std::thread;
+use tokio::task;
+use tun::Device;
+use std::io::{Read, Write};
 
-mod encryption;
+#[cfg(target_os = "macos")]
+mod iface_darwin;
+
+#[macro_use]
+extern crate lazy_static;
+
 mod config;
+use crate::config::VPNState;
+use crate::config::Config;
+
+mod encryption_cbc;
+use crate::encryption_cbc::{AesCbc, PacketEncrypter}
+
+const MTU: i32 = 1300;
+const BUFFERSIZE: usize = 1518;
+
+// Assuming you have defined the VPNState struct in the config module
+static CONFIG: Arc<Mutex<VPNState>> = Arc::new(Mutex::new(VPNState::new().unwrap()));
+
+fn rcvr_thread(proto: &str, port: u16, iface: Arc<Mutex<tun::platform::Device>>) -> Result<(), Box<dyn Error>> {
+    let socket = UdpSocket::bind(format!("{}:{}", proto, port))?;
+
+    let mut encrypted = vec![0u8; BUFFERSIZE];
+    let mut decrypted = vec![0u8; BUFFERSIZE];
+
+    loop {
+        let (amt, src) = socket.recv_from(&mut encrypted)?;
+
+        let conf = CONFIG.lock().unwrap();
+
+        // Assuming you've implemented the DecryptV4Chk function
+        let (size, main_err) = conf.main.decrypt_v4_chk(&encrypted[..amt], &mut decrypted)?;
+
+        if main_err.is_some() {
+            // Handle decryption error
+        }
+
+        let n = iface.lock().unwrap().write(&decrypted[..size])?;
+
+        if n != size {
+            println!("Partial package written to local interface");
+        }
+    }
+}
+
+fn sndr_thread(socket: UdpSocket, iface: Arc<Mutex<tun::platform::Device>>) -> Result<(), Box<dyn Error>> {
+    let mut packet = vec![0u8; BUFFERSIZE];
+    let mut encrypted = vec![0u8; BUFFERSIZE];
+
+    loop {
+        let plen = iface.lock().unwrap().read(&mut packet)?;
+
+        let conf = CONFIG.lock().unwrap();
+
+        // Assuming you've implemented the Encrypt function
+        let clen = conf.main.encrypt(&packet[..plen], &mut encrypted)?;
+
+        for (ip, addr) in &conf.remotes {
+            let tsize = socket.send_to(&encrypted[..clen], addr)?;
+
+            if tsize != clen {
+                println!("Only {} bytes of {} sent", tsize, clen);
+            }
+        }
+    }
+}
 
 #[tokio::main]
-async fn main() -> Result<()> {
-    let matches = App::new("Rust LCVPN")
-        .version("0.1.0")
-        .arg(
-            Arg::new("config")
-                .short('c')
-                .long("config")
-                .value_name("FILE")
-                .about("Sets a custom config file")
-                .takes_value(true),
-        )
-        .get_matches();
+async fn main() -> Result<(), Box<dyn Error>> {
 
-    let config_file = matches.value_of("config").unwrap_or("config.toml");
-    let config = parse_config(config_file)?;
+    lazy_static! {
+        pub static ref CONFIG: Arc<Mutex<Config>> = Arc::new(Mutex::new(Config::new()));
+    }
 
-    let tun = setup_tun_device(&config)?;
-    let socket = UdpSocket::bind(config.bind_address).await?;
+    let local_cidr = "10.0.0.1/24";
+    let iface = iface_darwin::iface_setup(local_cidr)?;
 
-    let peers: Vec<SocketAddr> = config.peers.into_iter().map(|p| p.address).collect();
+    let iface = Arc::new(Mutex::new(iface));
 
-    let encryption_engine = Arc::new(encryption::Encryption::new(config.encryption_key));
+    let (tx, rx) = mpsc::channel();
 
-    // Implement logic for handling tun device, reading packets, and sending them to appropriate peers
+    task::spawn(iface_darwin::routes_thread(iface.lock().unwrap().name()?.to_string(), rx));
 
-    // Implement logic for receiving packets from peers, decrypting them, and writing them to the tun device
+    for _ in 0..2 {
+        let iface_clone = Arc::clone(&iface);
+        thread::spawn(move || rcvr_thread("0.0.0.0", 12345, iface_clone));
+    }
+
+    let socket = UdpSocket::bind("0.0.0.0:0")?;
+    for _ in 0..2 {
+        let iface_clone = Arc::clone(&iface);
+        thread::spawn(move || sndr_thread(socket.try_clone().unwrap(), iface_clone));
+    }
 
     Ok(())
 }
-
-fn parse_config(file: &str) -> Result<config::Config> {
-    config::Config::from_file(file)
-}
-
-fn setup_tun_device(config: &Config) -> Result<Tun> {
-    // Implement logic for setting up the tun device
-}
-

@@ -1,0 +1,3 @@
+cargo:rerun-if-changed=build/main.rs
+cargo:rustc-env=TYPENUM_BUILD_CONSTS=/Users/anandgokul/Documents/rust_vpn/target/debug/build/typenum-1a8364b4ab1ecfed/out/consts.rs
+cargo:rustc-env=TYPENUM_BUILD_OP=/Users/anandgokul/Documents/rust_vpn/target/debug/build/typenum-1a8364b4ab1ecfed/out/op.rs
