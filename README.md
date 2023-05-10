@@ -1,6 +1,16 @@
 # [Open Source] Blockchain Decentralized Lightweight VPN in Rust
 
-This project has been implemented in Rust for its efficiency, memory safety, and concurrency. DCVPN_RUST is a light and easy-to-use decentralized VPN solution.
+DCVPN_Rust (Decentralized VPN in Rust) is an open-source initiative started by @anandgokul18 to design, develop and maintain a decentralized Virtual Private Network (VPN) solution, meticulously engineered using the Rust programming language. Chosen for its superior performance characteristics, Rust empowers this project with high-speed execution, rigorous memory safety, and seamless concurrency capabilities. 
+
+This project's central design philosophy revolves around the creation of a lightweight, yet robust VPN solution, characterised by its ease of use and adaptability. DCVPN_RUST is underpinned by a configuration system that simplifies deployment across multiple hosts, making it an ideal choice for diverse networking environments. 
+
+With a design that encourages direct UDP communication between selected hosts, DCVPN_RUST eliminates the need for a central server, thereby fostering a truly decentralized network. Built with Linux systems in mind, it harnesses the power of TUN devices to deliver a high-performance networking solution.
+
+One of the cornerstones of DCVPN_RUST is its commitment to security. It employs AES-128, AES-192, or AES-256 encryption, giving users the flexibility to choose between speed and security, as per their requirements. Additionally, an optional HMAC-SHA256 encryption is available for enhanced data integrity and authenticity.
+
+DCVPN_RUST is a testament to the power of open-source development. It is not only a product of rigorous engineering and meticulous design but also of the collective effort of a passionate community. As an open-source project, it welcomes contributions from developers around the world, fostering a culture of collaboration and continuous improvement.
+
+However, it's important to note that while DCVPN_RUST is a powerful tool, it is still in its beta stage. Its use comes with a set of risks and it's recommended to use only the versions marked as "release". Despite this, we're confident in the potential of this project and are continually working towards enhancing its capabilities and stability.
 
 ## Features
 
