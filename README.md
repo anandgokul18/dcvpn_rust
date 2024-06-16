@@ -1,3 +1,10 @@
+# > :warning: **Vulnerability Alert: A critical vulnerability (CVE-2021-44228) related to remote code execution has been identified in this project. We are currently UNDERGOING MAINTENANCE to mitigate this issue. Please refrain from using the current release until further notice. Project might be moved to private repo affecting public visibility and actions like forking and starring**
+
+
+
+.
+
+
 # [Open Source] Blockchain Decentralized Lightweight VPN in Rust
 
 DCVPN_Rust (Decentralized VPN in Rust) is an open-source initiative started by @anandgokul18 to design, develop and maintain a decentralized Virtual Private Network (VPN) solution, meticulously engineered using the Rust programming language. Chosen for its superior performance characteristics, Rust empowers this project with high-speed execution, rigorous memory safety, and seamless concurrency capabilities. 
